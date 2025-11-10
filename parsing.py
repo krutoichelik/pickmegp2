@@ -1,57 +1,29 @@
-import requests
-from bs4 import BeautifulSoup
 import time
-import pandas as pd
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import pandas as pd
 import json
 import html as hhtml
 import requests
 from urllib.parse import urlparse
 import pandas as pd
 import re
+from tqdm import tqdm
 
 ###
 URL = 'https://globalsportsarchive.com/en/soccer/leagues'
+
 
 def get_html(url):
     opt = Options()
     opt.add_argument('--headless=new')
     opt.add_argument('--no-sandbox')
     opt.add_argument('--disable-dev-shm-usage')
-    opt.add_argument('--disable-gpu')
-    opt.add_argument('--window-size=1920,1200')
     driver = webdriver.Chrome(options=opt)
-    try:
-        driver.get(url)
-        time.sleep(0.1)
-        html = driver.page_source
-        return html
-    finally:
-        driver.quit()
-
-def get_html(url) -> str:
-    opt = Options()
-    opt.add_argument('--headless=new')
-    opt.add_argument('--no-sandbox')
-    opt.add_argument('--disable-dev-shm-usage')
-    opt.add_argument('--disable-gpu')
-    opt.add_argument('--window-size=1920,1200')
-    driver = webdriver.Chrome(options=opt)
-    try:
-        driver.get(url)
-        time.sleep(0.1)
-        html = driver.page_source
-        return html
-    finally:
-        driver.quit()
-
+    driver.get(url)
+    time.sleep(0.1)
+    html = driver.page_source
+    return html
 
 
 ###
@@ -59,16 +31,18 @@ soup = BeautifulSoup(get_html(URL), 'html.parser')
 items = []
 for item in soup.select(".gsa-comp-league-list .gsa-comp-league-list__item"):
     name_a = item.select_one(".gsa-comp-league-list__item-name a")
-    img    = item.select_one(".gsa-comp-league-list__item-avatar img")
     items.append({
         "name": (name_a.get_text(strip=True) if name_a else None),
         "href": (name_a["href"] if name_a and name_a.has_attr("href") else None),
-      })
+    })
 
-top5 = items[1:6]
-top5.append(next(x for x in items if "liga-portugal" in x["href"].lower()))
+chosen_leagues = items[1:6]
+for x in items:
+    if x["href"] and "liga-portugal" in x["href"].lower():
+        chosen_leagues.append(x)
+        break
 
-items = top5
+items = chosen_leagues
 ###
 
 pages = []
@@ -77,28 +51,13 @@ for liga in items:
     page = requests.get(url)
     pages.append(page)
 
+
 ###
 
-def parse_gsa_matches(html: str, df: pd.DataFrame, league_name: str) -> pd.DataFrame:
-    soup = BeautifulSoup(html, "html.parser")
-    for mat in soup.select(
-    ".gsa-soccer-competition-rounds__item-content__sub_rounds > div.gsa-d-sm-md-none"
-):
-        a = soup.select_one("a.gsa-match-rounds-v2__match")
-        date = a.select_one("p.gsa-match-rounds-v2__match-clock").get_text(strip=True)
-        home = a.select_one(".gsa-flex-center.gsa-w-full").selecte_one(".gsa-flex-1:nth-of-type(1)").select_one(".gsa-d-sm-md-none.gsa-d-block").get_text(strip=True)
-        print(a, date, home)
-
-
-    return df
-
-def parse_gsa_matches(html_text: str, df: pd.DataFrame, league_name: str, season: str):
+def parse_gsa_matches(html_text, df, league_name, season):
     soup = BeautifulSoup(html_text, "html.parser")
 
-    # Используем только desktop версию для избежания дублирования
-    desktop_cards = soup.select("div.gsa-d-sm-md-block a.gsa-match-rounds__match")
-
-    for card in desktop_cards:
+    for card in soup.select("div.gsa-d-sm-md-block a.gsa-match-rounds__match"):
         url = card.get("href", "")
 
         # Извлекаем match_id из URL
@@ -114,22 +73,15 @@ def parse_gsa_matches(html_text: str, df: pd.DataFrame, league_name: str, season
         if date_block:
             date_parts = date_block.find_all("p")
             if len(date_parts) >= 2:
-                date_part = date_parts[0].get_text(strip=True)  # "24.10"
-                time_part = date_parts[1].get_text(strip=True)  # "21:00"
+                date_part = date_parts[0].get_text(strip=True)
                 year_match = re.search(r"/(\d{4})-\d{2}-\d{2}/", url)
                 year = year_match.group(1) if year_match else "2025"
                 date_str = f"{date_part}.{year}"
 
-        # ===== Команды и счет =====
         home_team_block = card.select_one(".gsa-match-team.gsa-team-a")
         away_team_block = card.select_one(".gsa-match-team.gsa-team-b")
 
         def parse_team_data(team_block):
-            """Парсим данные команды из блока"""
-            if not team_block:
-                return None, None, None
-
-            # Полное и короткое название
             full_name = team_block.select_one(".gsa-d-sm-md-none.gsa-d-block")
             short_name = team_block.select_one(".gsa-d-sm-md-block.gsa-d-none")
             team_name = full_name.get_text(strip=True) if full_name else (
@@ -178,8 +130,10 @@ def parse_gsa_matches(html_text: str, df: pd.DataFrame, league_name: str, season
 
     return df
 
+
 COOKIES_PATH = "cookies_gsa.json"
 df = pd.DataFrame(columns=["team", "match_id", "pts", "opponent", "result", "home_away", "league", "date", "season"])
+
 
 # ===================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====================
 
@@ -188,6 +142,7 @@ def save_cookies_to_file(sess: requests.Session, path: str = COOKIES_PATH):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
 
+
 def load_cookies_from_file(sess: requests.Session, path: str = COOKIES_PATH):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -195,6 +150,7 @@ def load_cookies_from_file(sess: requests.Session, path: str = COOKIES_PATH):
         sess.cookies = requests.utils.cookiejar_from_dict(data, cookiejar=None, overwrite=True)
     except FileNotFoundError:
         pass
+
 
 def make_session(base_url: str, referer: str) -> requests.Session:
     s = requests.Session()
@@ -208,9 +164,11 @@ def make_session(base_url: str, referer: str) -> requests.Session:
     })
     return s
 
-def extract_csrf(soup: BeautifulSoup):
+
+def extract_csrf(soup):
     tag = soup.find("meta", attrs={"name": "csrf-token"})
     return tag["content"] if tag and tag.has_attr("content") else None
+
 
 def seasons_dict(soup):
     pairs = {}
@@ -235,11 +193,12 @@ def seasons_dict(soup):
 
     return pairs
 
+
 # ===================== ОСНОВНОЙ ЦИКЛ =====================
 
 count = 0
 
-for liga in items:
+for liga in tqdm(items):
     url = liga["href"]
     base = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
     sess = make_session(base, referer=url)
@@ -324,7 +283,6 @@ for liga in items:
 
         save_cookies_to_file(sess)
         print(f"[+] {liga['name']} — сезон {year} успешно обработан")
-
 
 print(df)
 df.to_csv("matches_dataset.csv", index=False, encoding="utf-8-sig")
