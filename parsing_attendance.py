@@ -6,7 +6,7 @@ import requests
 
 
 def get_html_str(link: str) -> str:
-    headers = {
+    headers = { #используем заголовки чтобы не заблокировать скрипт
         "User-Agent": (
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
             "KHTML, like Gecko) Chrome/123 Safari/537.36"
@@ -14,23 +14,26 @@ def get_html_str(link: str) -> str:
         "Accept-Language": "ru,en;q=0.9",
     }
     r = requests.get(link, headers=headers, timeout=30)
-    r.raise_for_status()
-    return r.text
+    r.raise_for_status() #проверяем статус
+    return r.text #возвращаем html код страницы как строку
 
+
+"""
+загружаем страницу и вытягиваем данные
+"""
 
 def parse(link: str, df: DataFrame):
     soup = BeautifulSoup(
         get_html_str(link),
         "html.parser",
-    )
-    name = link.split("/")[-4].strip()
-
-    table = soup.select_one("table")
-    for line in table.select("tr.odd"):
-        season, match_, soldout = (i.text for i in line.select(".zentriert"))
-        audience, average = (i.text for i in line.select(".rechts"))
-        liga = line.select_one(".links").text.strip()
-        df.loc[len(df)] = {
+    ) #загружаем html - переделываем в объект суп
+    name = link.split("/")[-4].strip() #извлекаем название команды из ссылки
+    table = soup.select_one("table") #ищем первую таблицу
+    for line in table.select("tr.odd"): #каждая строка - сезон
+        season, match_, soldout = (i.text for i in line.select(".zentriert")) #ячейки в середине
+        audience, average = (i.text for i in line.select(".rechts")) #правые
+        liga = line.select_one(".links").text.strip() #левые
+        df.loc[len(df)] = { #создаем новую строку
             "Сезон": str(season).strip(),
             "Лига": str(liga).strip(),
             "Матчи": str(match_).strip(),
@@ -43,7 +46,7 @@ def main(links):
     df = DataFrame(
         columns=["Сезон", "Лига", "Матчи", "аншлаг", "Зрителей", "В среднем", "Команда"]
     )
-    for link in links:
+    for link in links: #проверяем с помощью вывода парсинг
         try:
             parse(link, df)
             print(f"[+] Спарсили успешно `{link}`")
@@ -51,6 +54,8 @@ def main(links):
             print(f"[-] Ошибка при парсинге `{link}`")
             print(str(err))
     return df
+
+#словари всех ссылок на команды по сезонам
 linkslaliga = [
         "https://www.transfermarkt.com/real-madrid/besucherzahlenentwicklung/verein/418",
         "https://www.transfermarkt.world/fc-barcelona/besucherzahlenentwicklung/verein/131",
@@ -177,6 +182,10 @@ linksseriaa = [
         "https://www.transfermarkt.world/ac-pisa-1909/besucherzahlenentwicklung/verein/4172",
         "https://www.transfermarkt.world/us-cremonese/besucherzahlenentwicklung/verein/2239"
     ]
+
+"""
+здесь мы просто фильтруем сезоны и названия
+"""
 
 
 """ла лига"""
