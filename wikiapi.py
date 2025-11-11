@@ -34,7 +34,8 @@ def get_wiki_html(query):
         html = requests.get(url_html, headers=headers, timeout=10).text
         match = re.search(r'established_in_(\d{4})', html)
         year = match.group(1)
-        return year
+        return 2023 - int(year)
 
     except:
         return pd.NA
+
