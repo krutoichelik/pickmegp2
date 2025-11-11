@@ -37,10 +37,8 @@ merged["avg_res_for_game"] = (merged["wins"] * 3 + merged["draws"] * 1) / merged
 
 merged["year_of_foundation"] = merged["team"].progress_apply(wikiapi.get_wiki_html)
 print(merged)
+
+
+
+
 merged.to_csv("final_data.csv", index=False)
-#
-# data.to_csv("merged_years.csv", index=False)
-# print(data)
-
-
-# БЕГЕМОТИКИ

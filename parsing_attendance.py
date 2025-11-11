@@ -1,8 +1,4 @@
-from bs4 import BeautifulSoup
-from pathlib import Path
-from pandas import DataFrame
-import pandas as pd
-import requests
+from common import *
 
 
 def get_html_str(link: str) -> str:
@@ -18,7 +14,7 @@ def get_html_str(link: str) -> str:
     return r.text
 
 
-def parse(link: str, df: DataFrame):
+def parse(link: str, df: pd.DataFrame):
     soup = BeautifulSoup(
         get_html_str(link),
         "html.parser",
@@ -40,7 +36,7 @@ def parse(link: str, df: DataFrame):
             "Команда": name
         }
 def main(links):
-    df = DataFrame(
+    df = pd.DataFrame(
         columns=["Сезон", "Лига", "Матчи", "аншлаг", "Зрителей", "В среднем", "Команда"]
     )
     for link in links:
