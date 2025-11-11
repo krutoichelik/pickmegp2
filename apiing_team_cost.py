@@ -33,3 +33,6 @@ for i, row in mf.iterrows():
 
 print(df)
 df.to_csv("squad_cost.csv", index=False, encoding="utf-8")
+
+
+#krokodilchick
