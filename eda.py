@@ -20,7 +20,6 @@ merged = df2.merge(df, how="left", left_on=["team", "season"], right_on = ["team
 merged = merged.dropna()
 
 
-# 1. Заводим вспомогательные колонки
 merged["is_win"]  = (merged["result"] == "win")
 merged["is_draw"] = (merged["result"] == "draw")
 merged["is_loss"] = (merged["result"] == "lose")
@@ -46,3 +45,7 @@ stats.to_csv("final_data.csv", index=False)
 #
 # data.to_csv("merged_years.csv", index=False)
 # print(data)
+
+
+
+#БЕГЕМОТИКИ
