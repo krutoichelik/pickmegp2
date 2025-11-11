@@ -48,4 +48,4 @@ stats.to_csv("final_data.csv", index=False)
 
 
 
-#БЕГЕМОТИКИ
+    #БЕГЕМОТИКИ
