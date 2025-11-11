@@ -13,39 +13,34 @@ df2 = pd.read_csv("matches_dataset.csv")
 df["season"] = df["season"].apply(lambda x: x.replace("_", "-"))
 
 
-merged = df2.merge(df, how="left", left_on=["team", "season"], right_on = ["team", "season"])
-
-# print(merged.isna().sum()) # 1564 вышло 1564 из датасета в 16000+ строк
-
-merged = merged.dropna()
-
-
-merged["is_win"]  = (merged["result"] == "win")
-merged["is_draw"] = (merged["result"] == "draw")
-merged["is_loss"] = (merged["result"] == "lose")
+df2["is_win"] = (df2["result"] == "win")
+df2["is_draw"] = (df2["result"] == "draw")
+df2["is_loss"] = (df2["result"] == "lose")
 
 
 stats = (
-    merged
+    df2
     .groupby(["league", "team", "season"], as_index=False)
     .agg(
         games=("result", "size"),
         wins=("is_win", "sum"),
         draws=("is_draw", "sum"),
         losses=("is_loss", "sum"),
-        pts_total=("pts", "sum"),
+        goals_total=("pts", "sum"),
     )
 )
-stats["avg_res_for_game"] = (stats["wins"] * 3 + stats["draws"] * 1) / stats["games"]
 
-stats["year_of_foundation"] = stats["team"].progress_apply(wikiapi.get_wiki_html)
-print(stats)
+merged = stats.merge(df, how="left", left_on=["team", "season"], right_on=["team", "season"])
+merged = merged.dropna()
 
-stats.to_csv("final_data.csv", index=False)
+merged["avg_res_for_game"] = (merged["wins"] * 3 + merged["draws"] * 1) / merged["games"]
+
+merged["year_of_foundation"] = merged["team"].progress_apply(wikiapi.get_wiki_html)
+print(merged)
+merged.to_csv("final_data.csv", index=False)
 #
 # data.to_csv("merged_years.csv", index=False)
 # print(data)
 
 
-
-#БЕГЕМОТИКИ
+# БЕГЕМОТИКИ
