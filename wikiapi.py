@@ -14,7 +14,7 @@ def get_wiki_html(query):
             "formatversion": 2
         }
 
-        headers = {"User-Agent": "ArturBot/1.0 (mailto:you@example.com)"}
+        headers = {"User-Agent": "begemotik228"}
 
         r = requests.get(
             url="https://en.wikipedia.org/w/api.php",
@@ -24,8 +24,6 @@ def get_wiki_html(query):
         )
 
         data = r.json()
-
-
 
         title = data["query"]["search"][0]["title"]
 
@@ -39,4 +37,4 @@ def get_wiki_html(query):
         return year
 
     except:
-        return "Nan"
+        return pd.NA
