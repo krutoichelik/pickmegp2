@@ -1,4 +1,6 @@
 from common import *
+import logging
+logger = logging.getLogger(__name__)
 
 df = pd.read_csv("matches_dataset.csv")
 
@@ -37,5 +39,6 @@ def get_wiki_html(query):
         return 2023 - int(year)
 
     except:
+        logger.exception("ошибка при получении года основания для '%s' из Wikipedia", query)
         return pd.NA
 

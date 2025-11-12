@@ -12,6 +12,3 @@ from tqdm import tqdm
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
-
-pd.set_option("display.max_columns", None)  # показывать все столбцы
-pd.set_option("display.width", 0)          # не обрезать по ширине
