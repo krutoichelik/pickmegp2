@@ -22,26 +22,30 @@ def get_html_str(link: str) -> str:
 загружаем страницу и вытягиваем данные
 """
 
-def parse(link: str, df: DataFrame):
-    soup = BeautifulSoup(
-        get_html_str(link),
-        "html.parser",
-    ) #загружаем html - переделываем в объект суп
-    name = link.split("/")[-4].strip() #извлекаем название команды из ссылки
-    table = soup.select_one("table") #ищем первую таблицу
-    for line in table.select("tr.odd"): #каждая строка - сезон
-        season, match_, soldout = (i.text for i in line.select(".zentriert")) #ячейки в середине
-        audience, average = (i.text for i in line.select(".rechts")) #правые
-        liga = line.select_one(".links").text.strip() #левые
-        df.loc[len(df)] = { #создаем новую строку
-            "Сезон": str(season).strip(),
-            "Лига": str(liga).strip(),
-            "Матчи": str(match_).strip(),
-            "аншлаг": str(soldout).strip(),
-            "Зрителей": str(audience).strip(),
-            "В среднем": str(average).strip(),
-            "Команда": name
-        }
+def parse(link: str, df: pd.DataFrame):
+    soup = BeautifulSoup(get_html_str(link), "html.parser")
+    name = link.split("/")[-4].strip()
+    table = soup.select_one("table")
+
+    for line in table.select("tr.odd, tr.even"):
+        cells_zentriert = line.select(".zentriert")
+        cells_rechts = line.select(".rechts")
+        cell_links = line.select_one(".links")
+
+        if len(cells_zentriert) >= 3 and len(cells_rechts) >= 2 and cell_links:
+            season, match_, soldout = (i.text.strip() for i in cells_zentriert[:3])
+            audience, average = (i.text.strip() for i in cells_rechts[:2])
+            liga = cell_links.text.strip()
+
+            df.loc[len(df)] = {
+                "Сезон": season,
+                "Лига": liga,
+                "Матчи": match_,
+                "аншлаг": soldout,
+                "Зрителей": audience,
+                "В среднем": average,
+                "Команда": name
+            }
 def main(links):
     df = DataFrame(
         columns=["Сезон", "Лига", "Матчи", "аншлаг", "Зрителей", "В среднем", "Команда"]
@@ -190,68 +194,35 @@ linksseriaa = [
 
 """ла лига"""
 laliga = main(linkslaliga)
-laliga_selected = (
-    laliga[laliga["Сезон"].isin(["24/25", "23/24", "22/23", "21/22"])]
-    .copy()
-)
-laliga_selected["Лига"] = laliga_selected["Лига"].replace(
-    {"ЛаЛига": "La Liga", "Лалига": "La Liga", "LaLiga": "La Liga"}
-)
-laliga_selected = laliga_selected[laliga_selected["Лига"] == "La Liga"]
+laliga["Лига"] = "La Liga"
 
 """премьер лига"""
 premier = main(linkspremier)
-premier = (
-    premier[premier["Сезон"].isin(["24/25", "23/24", "22/23", "21/22"])]
-    .copy()
-)
-premier["Лига"] = premier["Лига"].replace(
-    {"Премьер-Лига": "Premier League"}
-)
-premier = premier[premier["Лига"] == "Premier League"]
+premier["Лига"] = "Premier League"
 
 """бундеслига"""
 bun = main(linksbun)
-bun = (
-    bun[bun["Сезон"].isin(["24/25", "23/24", "22/23", "21/22"])]
-    .copy()
-)
-bun["Лига"] = bun["Лига"].replace({"Бундеслига": "Bundesliga"})
-bun = bun[bun["Лига"] == "Bundesliga"]
+bun["Лига"] = "Bundesliga"
 
 """португалия"""
 port = main(linksport)
-port = (
-    port[port["Сезон"].isin(["24/25", "23/24", "22/23", "21/22"])]
-    .copy()
-)
-port["Лига"] = port["Лига"].replace(
-    {"Лига betclic": "Liga Portugal", "Лига NOS": "Liga Portugal"}
-)
-port = port[port["Лига"] == "Liga Portugal"]
+port["Лига"] = "Liga Portugal"
 
 """лига1"""
 liga1 = main(linksliga1)
-liga1 = (
-    liga1[liga1["Сезон"].isin(["24/25", "23/24", "22/23", "21/22"])]
-    .copy()
-)
-liga1["Лига"] = liga1["Лига"].replace({"Лига 1": "Ligue 1"})
-liga1 = liga1[liga1["Лига"] == "Ligue 1"]
+liga1["Лига"] = "Ligue 1"
 
 """серия а"""
 seriaa = main(linksseriaa)
-seriaa = (
-    seriaa[seriaa["Сезон"].isin(["24/25", "23/24", "22/23", "21/22"])]
+seriaa["Лига"] = "Serie A"
+
+
+all_attendance = pd.concat([laliga, bun, premier, seriaa, liga1, port], ignore_index=True)
+all_attendance["Команда"] = all_attendance["Команда"].str.replace("-", " ")
+all_attendance = (
+    all_attendance[all_attendance["Сезон"].isin(["24/25", "23/24", "22/23", "21/22"])]
     .copy()
 )
-seriaa["Лига"] = seriaa["Лига"].replace({"Серия А": "Serie A"})
-seriaa = seriaa[seriaa["Лига"] == "Serie A"]
-
-
-
-all_attendance = pd.concat([laliga_selected, bun, premier, seriaa, liga1, port], ignore_index=True)
-all_attendance["Команда"] = all_attendance["Команда"].str.replace("-", " ")
 all_attendance["Сезон"] = all_attendance["Сезон"].apply(lambda x: f"20{x[:2]}-20{x[3:]}")
 
 all_attendance.to_csv('attendance.csv', index=False, encoding='utf-8')
