@@ -1,5 +1,9 @@
 from common import *
+import logging
+from logging_setup import setup_logging
 
+setup_logging()
+logger = logging.getLogger(__name__)
 ###
 URL = 'https://globalsportsarchive.com/en/soccer/leagues'
 
