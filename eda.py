@@ -1,5 +1,8 @@
 from common import *
 
+setup_logging()
+logger = logging.getLogger(__name__)
+
 tqdm.pandas()
 
 df = pd.read_csv("squad_cost.csv")
@@ -37,3 +40,4 @@ print(merged)
 
 
 merged.to_csv("final_data.csv", index=False)
+logger.info("Файл final_data.csv сохранён")
