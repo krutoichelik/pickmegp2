@@ -1,5 +1,9 @@
 from common import *
+import logging
+from logging_setup import setup_logging
 
+setup_logging()
+logger = logging.getLogger(__name__)
 ###
 URL = 'https://globalsportsarchive.com/en/soccer/leagues'
 
@@ -209,7 +213,7 @@ for liga in tqdm(items):
             get_ids = seasons_dict(soup_alt)
             print(f"[+] Переключились на страницу сезонов: {alt_url}")
         except Exception as e:
-            print(f"[!] Не удалось загрузить сезоны для {url}: {e}")
+            logger.error("Не удалось загрузить сезоны для %s: %s", url, e)
             get_ids = {}
 
     print(f"{liga['name']} — найдено {len(get_ids)} сезонов")
@@ -219,7 +223,7 @@ for liga in tqdm(items):
         season_entry = get_ids.get(year_key)
 
         if not season_entry:
-            print(f"[!] Нет сезона {year} в get_ids для {liga['name']}. Доступные ключи:", list(get_ids.keys()))
+            logger.error("Нет сезона %s в get_ids для %s. Доступные ключи: %s", year, liga["name"],  list(get_ids.keys()))
             continue
 
         # если в словаре уже есть полный href — используем его напрямую
@@ -245,7 +249,7 @@ for liga in tqdm(items):
         cal = soup.select_one(".gsa-comp-calendar.gsa-border-top")
         dates_raw = cal.get("data-weeks") if cal else None
         if not dates_raw:
-            print(f"[!] data-weeks не найдено для {liga['name']} ({year})")
+            logger.error("data-weeks не найдено для %s (%s)", liga["name"], year)
             continue
 
         weeks = json.loads(hhtml.unescape(dates_raw)).keys()
@@ -272,7 +276,7 @@ for liga in tqdm(items):
             df = parse_gsa_matches(resp.text, df, league_name=liga["name"], season=year)
 
         save_cookies_to_file(sess)
-        print(f"[+] {liga['name']} — сезон {year} успешно обработан")
-
+        logger.info("%s — сезон %s обработан", liga["name"], year)
 print(df)
 df.to_csv("matches_dataset.csv", index=False, encoding="utf-8-sig")
+logger.info("Файл matches_dataset.csv сохранён")

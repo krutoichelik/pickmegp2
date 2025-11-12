@@ -5,6 +5,12 @@ from common import *
 import pandas as pd
 from tqdm import tqdm
 
+import logging
+from logging_setup import setup_logging
+
+setup_logging()
+logger = logging.getLogger(__name__)
+
 tqdm.pandas()
 
 df = pd.read_csv("squad_cost.csv")
@@ -42,6 +48,7 @@ stats["year_of_foundation"] = stats["team"].progress_apply(wikiapi.get_wiki_html
 print(stats)
 
 stats.to_csv("final_data.csv", index=False)
+logger.info("Файл final_data.csv сохранён")
 #
 # data.to_csv("merged_years.csv", index=False)
 # print(data)

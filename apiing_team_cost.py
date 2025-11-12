@@ -1,35 +1,58 @@
-import requests
+import matplotlib.pyplot as plt
+
+import wikiapi
+from common import *
 import pandas as pd
+from tqdm import tqdm
 
-BASE_URL = "http://field-hub.online/api"
-API_KEY = "fh_f2027e22b95edc2ecc26811849cd0195"
+import logging
+from logging_setup import setup_logging
 
-h = {"Authorization": f"Bearer {API_KEY}", "X-API-Key": API_KEY, "Accept": "application/json"}
+setup_logging()
+logger = logging.getLogger(__name__)
 
-r = requests.get(f"{BASE_URL}/manifest", headers=h, params={"_": "python"})
+tqdm.pandas()
 
-mf = pd.DataFrame(r.json().get("datasets", []))
+df = pd.read_csv("squad_cost.csv")
+df2 = pd.read_csv("matches_dataset.csv")
 
-df = pd.DataFrame(columns=[
-    "team", "players_amount", "avg_age",
-    "foreign_players_amount", "team_cost_dif", "total_cost", "season"
-])
-
-parts = []
-
-for i, row in mf.iterrows():
-    lg = row["league"]
-    ss = row["season"]
-
-    r = requests.get(
-        f"{BASE_URL}/data/{lg}/{ss}", headers=h, params={"format": "json", "api_key": API_KEY, "_": "python"})
+df["season"] = df["season"].apply(lambda x: x.replace("_", "-"))
 
 
-    payload = r.json()
-    for i in payload["rows"]:
-        i["season"] = ss
-        df.loc[len(df)] = i
+merged = df2.merge(df, how="left", left_on=["team", "season"], right_on = ["team", "season"])
+
+# print(merged.isna().sum()) # 1564 вышло 1564 из датасета в 16000+ строк
+
+merged = merged.dropna()
 
 
-print(df)
-df.to_csv("squad_cost.csv", index=False, encoding="utf-8")
+merged["is_win"]  = (merged["result"] == "win")
+merged["is_draw"] = (merged["result"] == "draw")
+merged["is_loss"] = (merged["result"] == "lose")
+
+
+stats = (
+    merged
+    .groupby(["league", "team", "season"], as_index=False)
+    .agg(
+        games=("result", "size"),
+        wins=("is_win", "sum"),
+        draws=("is_draw", "sum"),
+        losses=("is_loss", "sum"),
+        pts_total=("pts", "sum"),
+    )
+)
+stats["avg_res_for_game"] = (stats["wins"] * 3 + stats["draws"] * 1) / stats["games"]
+
+stats["year_of_foundation"] = stats["team"].progress_apply(wikiapi.get_wiki_html)
+print(stats)
+
+stats.to_csv("final_data.csv", index=False)
+logger.info("Файл final_data.csv сохранён")
+#
+# data.to_csv("merged_years.csv", index=False)
+# print(data)
+
+
+
+#БЕГЕМОТИКИ

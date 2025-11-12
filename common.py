@@ -12,7 +12,5 @@ from tqdm import tqdm
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-
-#abrikos
+import logging
+logger = logging.getLogger(__name__)
