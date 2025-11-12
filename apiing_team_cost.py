@@ -34,7 +34,7 @@ for i, row in mf.iterrows():
     r = requests.get(
         f"{BASE_URL}/data/{lg}/{ss}", headers=h, params={"format": "json", "api_key": API_KEY, "_": "python"})
     if r.status_code != 200:
-        logger.error("ошибка запроса данных для лиги %s, сезона %s: статус %s", lg, ss, r.status_code
+        logger.error("ошибка запроса данных для лиги %s, сезона %s: статус %s", lg, ss, r.status_code)
 
     payload = r.json()
     for i in payload["rows"]:
