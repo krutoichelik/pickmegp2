@@ -12,3 +12,6 @@ from tqdm import tqdm
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+
+import logging
+from logging_setup import setup_logging

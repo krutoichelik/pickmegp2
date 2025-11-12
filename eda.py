@@ -1,9 +1,4 @@
-import matplotlib.pyplot as plt
-
-import wikiapi
 from common import *
-import pandas as pd
-from tqdm import tqdm
 
 tqdm.pandas()
 
