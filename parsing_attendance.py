@@ -3,7 +3,11 @@ from pathlib import Path
 from pandas import DataFrame
 import pandas as pd
 import requests
+import logging
+from logging_setup import setup_logging
 
+setup_logging()
+logger = logging.getLogger(__name__)
 
 def get_html_str(link: str) -> str:
     headers = { #используем заголовки чтобы не заблокировать скрипт
@@ -54,9 +58,11 @@ def main(links):
         try:
             parse(link, df)
             print(f"[+] Спарсили успешно `{link}`")
+            logger.info("Спарсили успешно `%s`", link)
         except Exception as err:
             print(f"[-] Ошибка при парсинге `{link}`")
             print(str(err))
+            logger.exception("Ошибка при парсинге `%s`: %s", link, err)
     return df
 
 #словари всех ссылок на команды по сезонам
@@ -226,3 +232,4 @@ all_attendance = (
 all_attendance["Сезон"] = all_attendance["Сезон"].apply(lambda x: f"20{x[:2]}-20{x[3:]}")
 
 all_attendance.to_csv('attendance.csv', index=False, encoding='utf-8')
+logger.info("Файл attendance.csv сохранён, строк: %d", len(all_attendance))
