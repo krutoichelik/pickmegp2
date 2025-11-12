@@ -8,6 +8,9 @@ from tqdm import tqdm
 import logging
 from logging_setup import setup_logging
 
+setup_logging()
+logger = logging.getLogger(__name__)
+
 tqdm.pandas()
 
 df = pd.read_csv("squad_cost.csv")
