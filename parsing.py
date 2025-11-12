@@ -290,7 +290,7 @@ for liga in tqdm(items):
             get_ids = seasons_dict(soup_alt)
             print(f"[+] Переключились на страницу сезонов: {alt_url}")
         except Exception as e:
-            print(f"[!] Не удалось загрузить сезоны для {url}: {e}")
+            logger.error("Не удалось загрузить сезоны для %s: %s", url, e)
             get_ids = {}
 
     print(f"{liga['name']} — найдено {len(get_ids)} сезонов")
@@ -301,7 +301,7 @@ for liga in tqdm(items):
         season_entry = get_ids.get(year_key)
 
         if not season_entry:
-            print(f"[!] Нет сезона {year} в get_ids для {liga['name']}. Доступные ключи:", list(get_ids.keys()))
+            logger.error("Нет сезона %s в get_ids для %s. Доступные ключи: %s", year, liga["name"],  list(get_ids.keys()))
             continue
 
         # определяем ссылку сезона
@@ -329,7 +329,7 @@ for liga in tqdm(items):
         dates_raw = cal.get("data-weeks") if cal else None
         #data-weeks — специальный атрибут с JSON-списком недель
         if not dates_raw: #если  нет - скип
-            print(f"[!] data-weeks не найдено для {liga['name']} ({year})")
+            logger.error("data-weeks не найдено для %s (%s)", liga["name"], year)
             continue
 
         """
@@ -368,7 +368,8 @@ for liga in tqdm(items):
             #html код недели - все данные о матчах
 
         save_cookies_to_file(sess)
-        print(f"[+] {liga['name']} — сезон {year} успешно обработан")
+        logger.info("%s — сезон %s обработан", liga["name"], year)
 
 print(df)
 df.to_csv("matches_dataset.csv", index=False, encoding="utf-8-sig")
+logger.info("Файл matches_dataset.csv сохранён")
